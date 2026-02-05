@@ -2,34 +2,40 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
+
+// Entidades existentes
 import { Step } from './entities/step.entity';
 import { Option } from './entities/option.entity';
-import { ConfigModule } from '@nestjs/config';
 import { Province } from './entities/province.entity';
 import { City } from './entities/city.entity';
 import { Laboratorio } from './entities/laboratorio.entity';
 
+// 👇 1. IMPORTA LA NUEVA ENTIDAD DE ESTADÍSTICAS
+import { ConsultationLog } from './entities/consultationLog';
+
+// 👇 2. IMPORTA EL MÓDULO DE ESTADÍSTICAS
+import { StatsModule } from './modules/stats/stats.module';
+
 @Module({
   imports: [
-    // 1. Esto lee el archivo .env de tu carpeta local
     ConfigModule.forRoot(),
 
-    // 2. Configuración de TypeORM
     TypeOrmModule.forRoot({
       type: 'postgres',
-      //port: 5432,
-      //username: 'postgres',
-      //password: 'Postgre12345',
-      //database: 'Tuberculosis',
-      url: process.env.DATABASE_URL, // <--- Lee la variable que acabas de crear
-      entities: [Step, Option, Province, City, Laboratorio],
-      synchronize: false,
+      url: process.env.DATABASE_URL,
+      // 👇 3. AGREGA ConsultationLog AQUI PARA QUE LA BASE DE DATOS LA RECONOZCA
+      entities: [Step, Option, Province, City, Laboratorio, ConsultationLog],
+      synchronize: false, // O true si estás en desarrollo y quieres que cree la tabla sola
       ssl: {
-        rejectUnauthorized: false, // <--- INDISPENSABLE para conectar con Neon
+        rejectUnauthorized: false,
       },
     }),
 
     TypeOrmModule.forFeature([Step, Option, Province, City, Laboratorio]),
+
+    // 👇 4. AGREGA EL MÓDULO AL ARRAY DE IMPORTS
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
