@@ -1,9 +1,14 @@
-// src/province.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  DeleteDateColumn,
+} from 'typeorm';
 import { City } from './city.entity';
 import { Laboratorio } from './laboratorio.entity';
 
-@Entity()
+@Entity('province')
 export class Province {
   @PrimaryGeneratedColumn()
   id: number;
@@ -11,11 +16,13 @@ export class Province {
   @Column()
   name: string;
 
-  // Relación: Una provincia tiene muchas ciudades
   @OneToMany(() => City, (city) => city.province)
   cities: City[];
 
-  // Relación: Una provincia tiene muchos laboratorios
+  // Cambié el nombre a PLURAL porque es un array
   @OneToMany(() => Laboratorio, (laboratorio) => laboratorio.province)
-  laboratorio: Laboratorio[];
+  laboratorios: Laboratorio[];
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date;
 }

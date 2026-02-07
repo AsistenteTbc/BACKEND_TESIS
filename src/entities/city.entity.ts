@@ -1,5 +1,12 @@
 // src/city.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 import { Province } from './province.entity';
 import { Laboratorio } from './laboratorio.entity';
 
@@ -25,4 +32,7 @@ export class City {
   @ManyToOne(() => Laboratorio, (laboratorio) => laboratorio.cities)
   @JoinColumn({ name: 'laboratorio_id' })
   laboratorio: Laboratorio;
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date;
 }

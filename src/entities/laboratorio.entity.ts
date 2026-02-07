@@ -1,9 +1,16 @@
-// src/laboratorio.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  JoinColumn,
+  ManyToOne,
+  DeleteDateColumn,
+} from 'typeorm';
 import { City } from './city.entity';
 import { Province } from './province.entity';
 
-@Entity()
+@Entity('laboratorio')
 export class Laboratorio {
   @PrimaryGeneratedColumn()
   id: number;
@@ -14,18 +21,24 @@ export class Laboratorio {
   @Column()
   address: string;
 
-  @Column()
+  @Column({ nullable: true }) // Hacemos opcional por si no tienen fijo
   phone: string;
 
-  @Column()
+  @Column({ nullable: true }) // Hacemos opcional
   horario: string;
 
-  // Relación: Un laboratorio tiene muchas ciudades
+  // --- PROVINCIA (AGREGADO ID EXPLÍCITO) ---
+  @Column({ name: 'province_id' })
+  provinceId: number;
+
+  @ManyToOne(() => Province, (province) => province.laboratorios) // Nota el plural aquí
+  @JoinColumn({ name: 'province_id' })
+  province: Province;
+
+  // Relación inversa
   @OneToMany(() => City, (city) => city.laboratorio)
   cities: City[];
 
-  //Relación: Un laboratorio pertence a una provincia
-  @ManyToOne(() => Province, (province) => province.laboratorio)
-  @JoinColumn({ name: 'province_id' })
-  province: Province;
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date;
 }

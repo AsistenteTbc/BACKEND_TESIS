@@ -99,7 +99,6 @@ export class StatsService {
     // Agrupa los casos por día para el gráfico de líneas
     let qTrend = this.logRepo
       .createQueryBuilder('log')
-      // Postgres usa TO_CHAR para formatear fechas
       .select("TO_CHAR(log.created_at, 'YYYY-MM-DD')", 'date')
       .addSelect('COUNT(*)', 'value')
       .groupBy("TO_CHAR(log.created_at, 'YYYY-MM-DD')")
@@ -109,7 +108,7 @@ export class StatsService {
 
     const byTrendRaw = await qTrend.getRawMany();
     const byTrend = byTrendRaw.map((item) => ({
-      date: item.date, // Retorna string '2023-10-25'
+      date: item.date, // Retorna string '2025-10-25'
       value: Number(item.value),
     }));
 
@@ -117,7 +116,7 @@ export class StatsService {
       byProvince,
       bySeverity,
       byCity,
-      byTrend, // <--- Agregamos esto al retorno
+      byTrend,
     };
   }
 }
