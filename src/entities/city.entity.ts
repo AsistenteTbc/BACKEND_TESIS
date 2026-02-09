@@ -1,4 +1,3 @@
-// src/city.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -10,7 +9,7 @@ import {
 import { Province } from './province.entity';
 import { Laboratorio } from './laboratorio.entity';
 
-@Entity()
+@Entity('city') // Recomendado: poner nombre de tabla explícito
 export class City {
   @PrimaryGeneratedColumn()
   id: number;
@@ -18,16 +17,20 @@ export class City {
   @Column()
   name: string;
 
-  @Column({ name: 'zip_code', nullable: true }) // Código postal (opcional pero útil)
+  @Column({ name: 'zip_code', nullable: true })
   zipCode: string;
 
+  // --- PROVINCIA ---
   @Column({ name: 'province_id' })
   provinceId: number;
 
-  // Relación: Una ciudad pertenece a una provincia
   @ManyToOne(() => Province, (province) => province.cities)
   @JoinColumn({ name: 'province_id' })
   province: Province;
+
+  // --- LABORATORIO (AGREGADO ID EXPLÍCITO) ---
+  @Column({ name: 'laboratorio_id', nullable: true }) // Puede ser null si aún no se asignó
+  laboratorioId: number;
 
   @ManyToOne(() => Laboratorio, (laboratorio) => laboratorio.cities)
   @JoinColumn({ name: 'laboratorio_id' })

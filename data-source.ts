@@ -12,10 +12,6 @@ dotenv.config();
 export const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
-  //port: 5432,
-  //username: 'postgres',
-  //password: 'Postgre12345',
-  //database: 'Tuberculosis',
   ssl: {
     rejectUnauthorized: false,
   },
