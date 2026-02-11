@@ -17,7 +17,7 @@ export class StatsService {
 
   // AHORA ACEPTAMOS 3 FILTROS: Provincia, Desde, Hasta
   async getDashboardStats(provinceFilter?: string, from?: string, to?: string) {
-    // Función auxiliar para aplicar TODOS los filtros
+    // --- FUNCIÓN AUXILIAR PARA APLICAR FILTROS ---
     const applyFilter = (query: any) => {
       // 1. Filtro de Provincia
       if (provinceFilter && provinceFilter !== 'TODAS') {
@@ -39,7 +39,7 @@ export class StatsService {
       return query;
     };
 
-    // A. Casos por Provincia
+    // --- A. Casos por Provincia ---
     let qProvince = this.logRepo
       .createQueryBuilder('log')
       .select('log.provinceName', 'name')
@@ -54,7 +54,7 @@ export class StatsService {
       value: Number(item.value),
     }));
 
-    // B. Casos por Gravedad
+    // --- B. Casos por Gravedad (Variante) ---
     let qSeverity = this.logRepo
       .createQueryBuilder('log')
       .select('log.resultVariant', 'variant')
@@ -76,7 +76,7 @@ export class StatsService {
       value: Number(s.count),
     }));
 
-    // C. Casos por Ciudad
+    // --- C. Casos por Ciudad ---
     let qCity = this.logRepo
       .createQueryBuilder('log')
       .select('log.provinceName', 'province')
@@ -95,20 +95,70 @@ export class StatsService {
       value: Number(item.value),
     }));
 
-    // 👇 D. EVOLUCIÓN TEMPORAL (NUEVO) 👇
-    // Agrupa los casos por día para el gráfico de líneas
+    // --- D. EVOLUCIÓN TEMPORAL ---
     let qTrend = this.logRepo
       .createQueryBuilder('log')
       .select("TO_CHAR(log.created_at, 'YYYY-MM-DD')", 'date')
       .addSelect('COUNT(*)', 'value')
       .groupBy("TO_CHAR(log.created_at, 'YYYY-MM-DD')")
-      .orderBy('date', 'ASC'); // Importante: Ordenar por fecha ascendente
+      .orderBy('date', 'ASC');
 
-    qTrend = applyFilter(qTrend); // Aplicamos los mismos filtros (fechas y provincia)
+    qTrend = applyFilter(qTrend);
 
     const byTrendRaw = await qTrend.getRawMany();
     const byTrend = byTrendRaw.map((item) => ({
-      date: item.date, // Retorna string '2025-10-25'
+      date: item.date,
+      value: Number(item.value),
+    }));
+
+    // 👇 --- NUEVAS MÉTRICAS AGREGADAS AQUI --- 👇
+
+    // --- E. POR TIPO DE DIAGNÓSTICO (Pulmonar vs Extra) ---
+    let qDiagnosis = this.logRepo
+      .createQueryBuilder('log')
+      .select('log.diagnosisType', 'name')
+      .addSelect('COUNT(*)', 'value')
+      .groupBy('log.diagnosisType');
+
+    qDiagnosis = applyFilter(qDiagnosis); // Aplicamos los mismos filtros
+
+    const byDiagnosisRaw = await qDiagnosis.getRawMany();
+    const byDiagnosis = byDiagnosisRaw.map((item) => ({
+      name: item.name || 'Sin especificar', // Manejo de nulos por seguridad
+      value: Number(item.value),
+    }));
+
+    // --- F. POR RANGO DE PESO ---
+    let qWeight = this.logRepo
+      .createQueryBuilder('log')
+      .select('log.patientWeightRange', 'name')
+      .addSelect('COUNT(*)', 'value')
+      .groupBy('log.patientWeightRange');
+
+    qWeight = applyFilter(qWeight);
+
+    const byWeightRaw = await qWeight.getRawMany();
+    const byWeight = byWeightRaw.map((item) => ({
+      name: item.name || 'No registrado',
+      value: Number(item.value),
+    }));
+
+    // --- G. POR GRUPO DE RIESGO (Si/No) ---
+    let qRisk = this.logRepo
+      .createQueryBuilder('log')
+      .select('log.isRiskGroup', 'isRisk')
+      .addSelect('COUNT(*)', 'value')
+      .groupBy('log.isRiskGroup');
+
+    qRisk = applyFilter(qRisk);
+
+    const byRiskRaw = await qRisk.getRawMany();
+    const byRisk = byRiskRaw.map((item) => ({
+      // Traducimos el booleano a texto legible para el gráfico
+      name:
+        item.isRisk === true || item.isRisk === 'true'
+          ? 'Grupo de Riesgo'
+          : 'Población General',
       value: Number(item.value),
     }));
 
@@ -117,6 +167,10 @@ export class StatsService {
       bySeverity,
       byCity,
       byTrend,
+      // Retornamos las nuevas métricas
+      byDiagnosis,
+      byWeight,
+      byRisk,
     };
   }
 }

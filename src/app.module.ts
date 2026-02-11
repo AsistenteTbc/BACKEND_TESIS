@@ -9,6 +9,7 @@ import { Province } from './entities/province.entity';
 import { City } from './entities/city.entity';
 import { Laboratorio } from './entities/laboratorio.entity';
 import { ConsultationLog } from './entities/consultationLog';
+import { User } from './entities/user.entity';
 
 // Módulos
 import { StatsModule } from './modules/stats/stats.module';
