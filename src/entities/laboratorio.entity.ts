@@ -21,6 +21,12 @@ export class Laboratorio {
   @Column()
   address: string;
 
+  @Column({ type: 'decimal', precision: 12, scale: 8, nullable: true })
+  latitude: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 8, nullable: true })
+  longitude: number;
+
   @Column({ nullable: true }) // Hacemos opcional por si no tienen fijo
   phone: string;
 
