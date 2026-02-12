@@ -16,6 +16,7 @@ import { StatsModule } from './modules/stats/stats.module';
 import { WizardModule } from './modules/wizard/wizard.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { LaboratoriesModule } from './modules/laboratories/laboratories.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -23,7 +24,15 @@ import { LaboratoriesModule } from './modules/laboratories/laboratories.module';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
-      entities: [Step, Option, Province, City, Laboratorio, ConsultationLog],
+      entities: [
+        Step,
+        Option,
+        Province,
+        City,
+        Laboratorio,
+        ConsultationLog,
+        User,
+      ],
       synchronize: false,
       ssl: { rejectUnauthorized: false },
     }),
@@ -33,6 +42,7 @@ import { LaboratoriesModule } from './modules/laboratories/laboratories.module';
     WizardModule,
     LocationsModule,
     LaboratoriesModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

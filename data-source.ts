@@ -6,6 +6,7 @@ import { City } from './src/entities/city.entity';
 import { Laboratorio } from './src/entities/laboratorio.entity';
 import { ConsultationLog } from './src/entities/consultationLog';
 import * as dotenv from 'dotenv';
+import { User } from './src/entities/user.entity';
 
 dotenv.config();
 
@@ -15,7 +16,7 @@ export const AppDataSource = new DataSource({
   ssl: {
     rejectUnauthorized: false,
   },
-  entities: [Step, Option, Province, City, Laboratorio, ConsultationLog],
+  entities: [Step, Option, Province, City, Laboratorio, ConsultationLog, User],
   migrations: ['src/migrations/*.ts'],
   synchronize: false,
 });

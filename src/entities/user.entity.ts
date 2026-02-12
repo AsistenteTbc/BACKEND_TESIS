@@ -3,10 +3,9 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('users') // Nombre de la tabla en la BD
+@Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
@@ -15,14 +14,11 @@ export class User {
   email: string;
 
   @Column()
-  password: string; // Aquí guardaremos el HASH, no el texto plano
+  password: string; // Aquí guardaremos el hash, no el texto plano
 
   @Column({ nullable: true })
   fullName: string;
 
   @CreateDateColumn()
   createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }
