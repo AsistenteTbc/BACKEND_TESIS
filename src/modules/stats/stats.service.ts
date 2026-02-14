@@ -167,7 +167,6 @@ export class StatsService {
       bySeverity,
       byCity,
       byTrend,
-      // Retornamos las nuevas métricas
       byDiagnosis,
       byWeight,
       byRisk,
