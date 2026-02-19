@@ -17,6 +17,13 @@ export class StatsService {
 
   // AHORA ACEPTAMOS 3 FILTROS: Provincia, Desde, Hasta
   async getDashboardStats(provinceFilter?: string, from?: string, to?: string) {
+    // ✅ VALIDACIÓN ADICIONAL: Si ambas fechas están presentes, validar que from <= to
+    if (from && to && from > to) {
+      throw new Error(
+        'La fecha "desde" no puede ser posterior a la fecha "hasta"'
+      );
+    }
+
     // --- FUNCIÓN AUXILIAR PARA APLICAR FILTROS ---
     const applyFilter = (query: any) => {
       // 1. Filtro de Provincia
