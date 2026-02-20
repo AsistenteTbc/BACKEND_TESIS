@@ -10,11 +10,11 @@ export class ConsultationLog {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'province_name' })
-  provinceName: string;
+  @Column({ name: 'province_id' })
+  provinceId: number;
 
-  @Column({ name: 'city_name' })
-  cityName: string;
+  @Column({ name: 'city_id' })
+  cityId: number;
 
   @Column({ name: 'diagnosis_type', nullable: true })
   diagnosisType: string; // 'Pulmonar', etc.
