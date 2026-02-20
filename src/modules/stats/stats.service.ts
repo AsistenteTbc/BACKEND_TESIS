@@ -10,173 +10,74 @@ export class StatsService {
     private logRepo: Repository<ConsultationLog>,
   ) {}
 
+  // --- RECUERDA: Esta función NO debe borrarse ---
   async logConsultation(data: Partial<ConsultationLog>) {
     const log = this.logRepo.create(data);
     return await this.logRepo.save(log);
   }
 
-  // AHORA ACEPTAMOS 3 FILTROS: Provincia (como ID string o 'TODAS'), Desde, Hasta
   async getDashboardStats(provinceFilter?: string, from?: string, to?: string) {
     if (from && to && from > to) {
-      throw new Error(
-        'La fecha "desde" no puede ser posterior a la fecha "hasta"',
-      );
+      throw new Error('La fecha "desde" no puede ser posterior a la fecha "hasta"');
     }
 
-    // --- FUNCIÓN AUXILIAR PARA APLICAR FILTROS ---
     const applyFilter = (query: any) => {
-      // 1. Filtro de Provincia (Ahora por ID)
       if (provinceFilter && provinceFilter !== 'TODAS') {
-        // Aseguramos que sea número para la consulta SQL
         query.andWhere('log.provinceId = :provinceId', {
           provinceId: Number(provinceFilter),
         });
       }
 
-      // 2. Filtro de Fecha DESDE (Inicio del día)
       if (from) {
         query.andWhere('log.createdAt >= :from', { from: `${from} 00:00:00` });
       }
-
-      // 3. Filtro de Fecha HASTA (Fin del día)
       if (to) {
         query.andWhere('log.createdAt <= :to', { to: `${to} 23:59:59` });
       }
-
       return query;
     };
 
-    // --- A. Casos por Provincia (Usando JOIN) ---
-    let qProvince = this.logRepo
-      .createQueryBuilder('log')
-      .leftJoin('province', 'p', 'p.id = log.province_id') // JOIN con tabla provincia
-      .select('p.name', 'name') // Seleccionamos el nombre real actualizado
+    // --- A. Provincias (CON JOIN) ---
+    let qProvince = this.logRepo.createQueryBuilder('log')
+      .leftJoin('province', 'p', 'p.id = log.provinceId') 
+      .select('p.name', 'name')
       .addSelect('COUNT(log.id)', 'value')
       .groupBy('p.name');
+    const byProvince = (await applyFilter(qProvince).getRawMany()).map(i => ({ name: i.name || 'Desconocida', value: Number(i.value) }));
 
-    qProvince = applyFilter(qProvince);
-
-    const byProvinceRaw = await qProvince.getRawMany();
-    const byProvince = byProvinceRaw.map((item) => ({
-      name: item.name || 'Desconocida',
-      value: Number(item.value),
-    }));
-
-    // --- B. Casos por Gravedad (Variante) ---
-    let qSeverity = this.logRepo
-      .createQueryBuilder('log')
-      .select('log.resultVariant', 'variant')
-      .addSelect('COUNT(log.id)', 'count')
-      .groupBy('log.resultVariant');
-
-    qSeverity = applyFilter(qSeverity);
-
-    const bySeverityRaw = await qSeverity.getRawMany();
-    const bySeverity = bySeverityRaw.map((s) => ({
-      name:
-        s.variant === 3
-          ? 'Priorizado (GeneXpert)'
-          : s.variant === 2
-            ? 'Estándar'
-            : s.variant === 4
-              ? 'Urgente Extra'
-              : 'Info',
+    // --- B. Severidad ---
+    let qSev = this.logRepo.createQueryBuilder('log')
+      .select('log.resultVariant', 'variant').addSelect('COUNT(log.id)', 'count').groupBy('log.resultVariant');
+    const bySeverity = (await applyFilter(qSev).getRawMany()).map(s => ({
+      name: s.variant === 3 ? 'Priorizado (GeneXpert)' : s.variant === 2 ? 'Estándar' : s.variant === 4 ? 'Urgente Extra' : 'Info',
       value: Number(s.count),
     }));
 
-    // --- C. Casos por Ciudad (Usando JOIN múltiple) ---
-    let qCity = this.logRepo
-      .createQueryBuilder('log')
-      .leftJoin('province', 'p', 'p.id = log.province_id')
-      .leftJoin('city', 'c', 'c.id = log.city_id') // JOIN con tabla ciudad
-      .select('p.name', 'province')
-      .addSelect('c.name', 'city')
-      .addSelect('COUNT(log.id)', 'value')
-      .groupBy('p.name')
-      .addGroupBy('c.name')
-      .orderBy('value', 'DESC');
+    // --- C. Ciudades (CON JOIN) ---
+    let qCity = this.logRepo.createQueryBuilder('log')
+      .leftJoin('province', 'p', 'p.id = log.provinceId')
+      .leftJoin('city', 'c', 'c.id = log.cityId')
+      .select('p.name', 'province').addSelect('c.name', 'city').addSelect('COUNT(log.id)', 'value')
+      .groupBy('p.name').addGroupBy('c.name');
+    const byCity = (await applyFilter(qCity).getRawMany()).map(i => ({ province: i.province, city: i.city, value: Number(i.value) }));
 
-    qCity = applyFilter(qCity);
+    // --- D. Evolución ---
+    let qTrend = this.logRepo.createQueryBuilder('log')
+      .select("TO_CHAR(log.createdAt, 'YYYY-MM-DD')", 'date').addSelect('COUNT(log.id)', 'value')
+      .groupBy("TO_CHAR(log.createdAt, 'YYYY-MM-DD')").orderBy('date', 'ASC');
+    const byTrend = (await applyFilter(qTrend).getRawMany()).map(i => ({ date: i.date, value: Number(i.value) }));
 
-    const byCityRaw = await qCity.getRawMany();
-    const byCity = byCityRaw.map((item) => ({
-      province: item.province || 'Desconocida',
-      city: item.city || 'Desconocida',
-      value: Number(item.value),
-    }));
-
-    // --- D. EVOLUCIÓN TEMPORAL ---
-    let qTrend = this.logRepo
-      .createQueryBuilder('log')
-      .select("TO_CHAR(log.createdAt, 'YYYY-MM-DD')", 'date')
-      .addSelect('COUNT(log.id)', 'value')
-      .groupBy("TO_CHAR(log.createdAt, 'YYYY-MM-DD')")
-      .orderBy('date', 'ASC');
-
-    qTrend = applyFilter(qTrend);
-
-    const byTrendRaw = await qTrend.getRawMany();
-    const byTrend = byTrendRaw.map((item) => ({
-      date: item.date,
-      value: Number(item.value),
-    }));
-
-    // --- E. POR TIPO DE DIAGNÓSTICO ---
-    let qDiagnosis = this.logRepo
-      .createQueryBuilder('log')
-      .select('log.diagnosisType', 'name')
-      .addSelect('COUNT(log.id)', 'value')
-      .groupBy('log.diagnosisType');
-
-    qDiagnosis = applyFilter(qDiagnosis);
-
-    const byDiagnosisRaw = await qDiagnosis.getRawMany();
-    const byDiagnosis = byDiagnosisRaw.map((item) => ({
-      name: item.name || 'Sin especificar',
-      value: Number(item.value),
-    }));
-
-    // --- F. POR RANGO DE PESO ---
-    let qWeight = this.logRepo
-      .createQueryBuilder('log')
-      .select('log.patientWeightRange', 'name')
-      .addSelect('COUNT(log.id)', 'value')
-      .groupBy('log.patientWeightRange');
-
-    qWeight = applyFilter(qWeight);
-
-    const byWeightRaw = await qWeight.getRawMany();
-    const byWeight = byWeightRaw.map((item) => ({
-      name: item.name || 'No registrado',
-      value: Number(item.value),
-    }));
-
-    // --- G. POR GRUPO DE RIESGO ---
-    let qRisk = this.logRepo
-      .createQueryBuilder('log')
-      .select('log.isRiskGroup', 'isRisk')
-      .addSelect('COUNT(log.id)', 'value')
-      .groupBy('log.isRiskGroup');
-
-    qRisk = applyFilter(qRisk);
-
-    const byRiskRaw = await qRisk.getRawMany();
-    const byRisk = byRiskRaw.map((item) => ({
-      name:
-        item.isRisk === true || item.isRisk === 'true'
-          ? 'Grupo de Riesgo'
-          : 'Población General',
-      value: Number(item.value),
-    }));
-
-    return {
-      byProvince,
-      bySeverity,
-      byCity,
-      byTrend,
-      byDiagnosis,
-      byWeight,
-      byRisk,
+    // --- E, F, G ---
+    const getStat = async (field: string) => {
+      let q = this.logRepo.createQueryBuilder('log').select(`log.${field}`, 'name').addSelect('COUNT(log.id)', 'value').groupBy(`log.${field}`);
+      return (await applyFilter(q).getRawMany()).map(i => ({ name: i.name || 'N/A', value: Number(i.value) }));
     };
+
+    const byDiagnosis = await getStat('diagnosisType');
+    const byWeight = await getStat('patientWeightRange');
+    const byRiskRaw = await getStat('isRiskGroup');
+    const byRisk = byRiskRaw.map(i => ({ name: i.name === true || i.name === 'true' ? 'Grupo de Riesgo' : 'Población General', value: i.value }));
+
+    return { byProvince, bySeverity, byCity, byTrend, byDiagnosis, byWeight, byRisk };
   }
 }

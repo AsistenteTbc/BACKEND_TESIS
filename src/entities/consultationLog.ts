@@ -10,14 +10,14 @@ export class ConsultationLog {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'province_id' })
+  @Column({ name: 'province_id' }) // <--- ESPECIFICAMOS EL NOMBRE REAL
   provinceId: number;
 
-  @Column({ name: 'city_id' })
+  @Column({ name: 'city_id' })     // <--- ESPECIFICAMOS EL NOMBRE REAL
   cityId: number;
 
   @Column({ name: 'diagnosis_type', nullable: true })
-  diagnosisType: string; // 'Pulmonar', etc.
+  diagnosisType: string;
 
   @Column({ name: 'is_risk_group', default: false })
   isRiskGroup: boolean;
@@ -26,7 +26,7 @@ export class ConsultationLog {
   patientWeightRange: string;
 
   @Column({ name: 'result_variant' })
-  resultVariant: number; // Para saber si fue Urgente o Normal
+  resultVariant: number;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
